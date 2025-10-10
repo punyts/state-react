@@ -1,0 +1,35 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "ES2022",
+            "DOM"
+        ],
+        "jsx": "react-jsx",
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "outDir": "dist",
+        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "declaration": true,
+        "declarationMap": true,
+        "composite": true,
+        "types": []
+    },
+    "include": [
+        "src"
+    ],
+    "references": [
+        {
+            "path": "../core"
+        },
+        {
+            "path": "../state"
+        }
+    ]
+}
