@@ -1,34 +1,43 @@
 {
-  "name": "@punyts/state-react",
-  "version": "1.0.0",
-  "publishConfig": {
-    "access": "public"
-  },
-  "type": "module",
-  "description": "Controls for hooking up react to the real-time state system",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "clean": "tsc -b tsconfig.json --clean && node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "npm run typecheck && tsc -p tsconfig.json",
-    "build:watch": "tsc -p tsconfig.json -w",
-    "dev": "npm run build:watch",
-    "test": "echo \"(no tests)\""
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@punyts/core": "^1.0.0",
-    "@punyts/state": "^1.0.0"
-  },
-  "devDependencies": {
-    "@testing-library/react": "^16.3.0",
-    "@types/jest": "^30.0.0",
-    "jest": "^30.2.0",
-    "ts-jest": "^29.4.4",
-    "typescript": "^5.9.3"
-  }
+    "name": "@punyts/state-react",
+    "version": "1.0.0",
+    "publishConfig": {
+        "access": "public"
+    },
+    "type": "module",
+    "description": "Controls for hooking up react to the real-time state system",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "clean": "tsc -b tsconfig.json --clean && node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\"",
+        "build:watch": "tsc -p tsconfig.json -w",
+        "dev": "npm run build:watch",
+        "typecheck": "tsc -p tsconfig.build.json --noEmit",
+        "build": "npm run typecheck && tsc -p tsconfig.build.json",
+        "test": "vitest",
+        "test:ci": "vitest run"
+    },
+    "exports": {
+        ".": "./dist/index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@punyts/core": "^1.0.0",
+        "@punyts/state": "^1.0.0",
+        "test": "^3.3.0"
+    },
+    "devDependencies": {
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.0",
+        "@types/jest": "^30.0.0",
+        "@types/node": "^24.7.1",
+        "jest": "^30.2.0",
+        "jsdom": "^27.0.0",
+        "ts-jest": "^29.4.4",
+        "typescript": "^5.9.3",
+        "vitest": "^3.2.4"
+    }
 }
