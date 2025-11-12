@@ -5,7 +5,8 @@
             "vitest/globals",
             "node",
             "@testing-library/jest-dom"
-        ]
+        ],
+        "isolatedModules": true
     },
     "include": [
         "src/**/*.test.ts",

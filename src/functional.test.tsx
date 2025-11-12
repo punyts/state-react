@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FC } from 'react';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { ProxyObject, Store } from '@punyts/state';
@@ -75,7 +76,7 @@ describe('functional test for createStateHook', () => {
         }
     };
 
-    const AppHeader: FC = jest.fn(() => {
+    const AppHeader: FC = vi.fn(() => {
         report("test", "Render AppHeader");
 
         const { text, subText } = useCreateStateHook<RootState, RootState['header']>(
@@ -103,7 +104,7 @@ describe('functional test for createStateHook', () => {
     const loadingActions = {
         setIsLoading: (isLoading: boolean) => isLoading
     }
-    const Loading: FC = jest.fn(() => {
+    const Loading: FC = vi.fn(() => {
         report("test", "Render Loading");
 
         const { isLoading } = useCreateStateHook<RootState, RootState>(
@@ -127,7 +128,7 @@ describe('functional test for createStateHook', () => {
     const userListActions = {
         
     }
-    const UserList: FC = jest.fn(() => {
+    const UserList: FC = vi.fn(() => {
         report("test", "Render UserList");
         const { ...users } = useCreateStateHook<RootState, RootState['users']>(
             "$.users",
@@ -158,7 +159,7 @@ describe('functional test for createStateHook', () => {
     const userActions = {
         
     }
-    const User: FC<{ userIndex: number }> = jest.fn(({ userIndex }) => {
+    const User: FC<{ userIndex: number }> = vi.fn(({ userIndex }) => {
         const { name, age } = useCreateStateHook<RootState, RootState['users'][number]>(
             `$.users.${userIndex}`,
             initialState.users[userIndex]
