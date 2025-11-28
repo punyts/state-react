@@ -1,4 +1,4 @@
-import { ReactNode, useContext } from "react";
+import { ReactNode, useContext, useRef } from "react";
 import { createStateHookFactory } from "./createStateHook.js";
 import { createStore, Store } from "@punyts/state";
 import React from "react";
@@ -16,11 +16,18 @@ interface StateContextValue<R> {
 const StateContext = React.createContext<StateContextValue<any> | null>(null);
 
 export const StateProvider = <R,>({ initialState, children }: StateProviderProps<R>) => {
-    const store = createStore<R>(initialState || ({} as R));
-    const { createStateHook } = createStateHookFactory<R>(store);
+    const lastInitialStateRef = useRef<R | undefined>(initialState);
+    const storeEntryRef = useRef<StateContextValue<R> | null>(null);
+
+    if (!storeEntryRef.current || initialState !== lastInitialStateRef.current) {
+        const store = createStore<R>(initialState || ({} as R));
+        const { createStateHook } = createStateHookFactory<R>(store);
+        storeEntryRef.current = { store, createStateHook };
+        lastInitialStateRef.current = initialState;
+    }
 
     return (
-        <StateContext.Provider value={{store, createStateHook }}>
+        <StateContext.Provider value={storeEntryRef.current!}>
             {children}
         </StateContext.Provider>
     );

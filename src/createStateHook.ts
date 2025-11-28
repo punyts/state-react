@@ -1,7 +1,10 @@
+import { report } from "@punyts/core";
 import { createStore, ProxyObject, resolveRelativePath, Store, validatePath } from "@punyts/state";
 import { useEffect, useRef, useState } from "react";
 
 const MIN_STATE_UPDATE_MS = 50;
+const FAST_UPDATE_COUNT = 5;
+const FAST_UPDATE_WINDOW_MS = 120;
 
 type DisposeListenerFn = () => void;
 
@@ -26,14 +29,16 @@ export const createStateHook = <R, S extends object>(
     listenToPaths: string | string[] = [path, `${path}.$every`],
     initializeIfMissing: boolean = false
 ): S & ProxyObject => {
-    
     const lastUpdate = useRef(0);
     const needsStateUpdate = useRef<any>(false);
     const isUpdating = useRef(false);
     const isDisposed = useRef(false);
     const disposeListenerRef = useRef<DisposeListenerFn | null>(null);
+    const fastUpdateCount = useRef(0);
+    const fastUpdateWindowStart = useRef(0);
 
-    useEffect(()=> {
+    useEffect(() => {
+        report("state-react", "useCreateStateHook mount for %s", [path]);
         initializeListeners();
         return () => {
             // since react reuses state we'll use the dynamic dispose method
@@ -44,17 +49,19 @@ export const createStateHook = <R, S extends object>(
 
     const storeState = getStoreState();
     let [state, setState] = useState<S & ProxyObject>(storeState);
-    if (storeState.__path !== state.__path) {
+    if (storeState !== state) {
         if (disposeListenerRef.current) {
             disposeListenerRef.current();
-            initializeListeners();
-            setState(storeState);
-            return storeState
         }
+        isDisposed.current = false;
+        initializeListeners();
+        setState(storeState);
+        return storeState;
     }
 
     function initializeListeners() {
         listenToPaths = resolveRelativePath(path, listenToPaths);
+        report("state-react", "Resolved listeners for %s: %s", [path, JSON.stringify(listenToPaths)]);
 
         store.on(listenToPaths, listener);
         store.on(path, deleteListener);
@@ -69,6 +76,7 @@ export const createStateHook = <R, S extends object>(
 
         store.off(listenToPaths, listener);
         store.off(path, deleteListener);
+        report("state-react", "Disposed listeners for %s", [path]);
 
         disposeListenerRef.current = null;
         isDisposed.current = true;
@@ -82,8 +90,8 @@ export const createStateHook = <R, S extends object>(
         let storeState = store.get<S>(path);
 
         if (storeState === undefined) {
-
             if (initializeIfMissing) {
+                report("state-react", "Initializing missing state at path: %s", [path]);
                 store.set<S>(
                     path,
                     initialState
@@ -93,12 +101,9 @@ export const createStateHook = <R, S extends object>(
                 storeState = store.get<S>(path);
             }
         }
-        else if (initialState) {
-            storeState.__applyIf!(initialState);
-        }
 
         if (!storeState)
-            throw new Error ("Path not found " + path);
+            throw new Error("Path not found " + path);
 
         return storeState;
     }
@@ -106,8 +111,27 @@ export const createStateHook = <R, S extends object>(
     function listener(eventPath: string, value: any, oldValue: any, action: string) {
         if (isDisposed.current) return;
 
-        const runtime = performance.now() - lastUpdate.current;
-        if (runtime < MIN_STATE_UPDATE_MS || isUpdating.current) {
+        const now = performance.now();
+        const runtime = now - lastUpdate.current;
+
+        if (now - fastUpdateWindowStart.current > FAST_UPDATE_WINDOW_MS) {
+            fastUpdateCount.current = 0;
+            fastUpdateWindowStart.current = now;
+        }
+
+        const shouldThrottle = (runtime < MIN_STATE_UPDATE_MS && fastUpdateCount.current >= FAST_UPDATE_COUNT) || isUpdating.current;
+
+        if (shouldThrottle) {
+            report(
+                "state-react-extended",
+                "Throttling listener for %s (runtime=%s, isUpdating=%s, fastCount=%s)",
+                [
+                    path,
+                    runtime.toFixed(2),
+                    String(isUpdating.current),
+                    String(fastUpdateCount.current)
+                ]
+            );
             if (needsStateUpdate.current) {
                 needsStateUpdate.current = oldValue;
                 return;
@@ -115,9 +139,14 @@ export const createStateHook = <R, S extends object>(
 
             needsStateUpdate.current = oldValue;
 
-            const delta = MIN_STATE_UPDATE_MS - runtime;
-            setTimeout(()=> {
+            const delta = Math.max(MIN_STATE_UPDATE_MS - runtime, 0);
+            setTimeout(() => {
                 needsStateUpdate.current = false;
+                report(
+                    "state-react-extended",
+                    "Replaying deferred listener for %s",
+                    [path]
+                );
                 listener(eventPath, value, needsStateUpdate.current, action);
             }, delta);
 
@@ -125,16 +154,19 @@ export const createStateHook = <R, S extends object>(
         }
 
         const updatedValue = store.get<S>(path);
+        report("state-react", "Applying listener update for %s", [path]);
 
         isUpdating.current = true;
         setState(updatedValue);
         isUpdating.current = false;
 
-        lastUpdate.current = performance.now();
+        lastUpdate.current = now;
+        fastUpdateCount.current += 1;
     }
 
     function deleteListener(eventPath: string, value: any, oldValue: any, action: string) {
         if (action === "delete" && !isDisposed.current) {
+            report("state-react", "State deleted at %s, disposing listeners", [path]);
             disposeListeners();
         }
     }
