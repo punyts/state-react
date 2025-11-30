@@ -48,8 +48,16 @@ export const createStateHook = <R, S extends object>(
     }, []);
 
     const storeState = getStoreState();
-    let [state, setState] = useState<S & ProxyObject>(storeState);
-    if (storeState !== state) {
+    const [state, setState] = useState<S & ProxyObject>(storeState);
+
+    const stateProxy = state as ProxyObject | undefined;
+    const storeProxy = storeState as ProxyObject | undefined;
+    const hasRefMatcher = Boolean(stateProxy?.__isRefMatch) && Boolean(storeProxy?.__isRefMatch);
+    const shouldSyncState = hasRefMatcher
+        ? !stateProxy!.__isRefMatch(storeProxy!)
+        : storeState !== state;
+
+    if (shouldSyncState) {
         if (disposeListenerRef.current) {
             disposeListenerRef.current();
         }
