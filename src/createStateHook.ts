@@ -61,13 +61,13 @@ export const createStateHook = <R, S extends object>(
         if (disposeListenerRef.current) {
             disposeListenerRef.current();
         }
-        isDisposed.current = false;
         initializeListeners();
         setState(storeState);
         return storeState;
     }
 
     function initializeListeners() {
+        isDisposed.current = false;
         listenToPaths = resolveRelativePath(path, listenToPaths);
         report("state-react", "Resolved listeners for %s: %s", [path, JSON.stringify(listenToPaths)]);
 
@@ -148,7 +148,27 @@ export const createStateHook = <R, S extends object>(
             needsStateUpdate.current = oldValue;
 
             const delta = Math.max(MIN_STATE_UPDATE_MS - runtime, 0);
+            report(
+                "state-react-extended",
+                "Scheduling deferred listener for %s in %sms (runtime=%s)",
+                [path, delta, runtime]
+            );
             setTimeout(() => {
+                // Check if disposed before replaying deferred listener
+                report(
+                    "state-react-extended",
+                    "Deferred callback for %s - isDisposed: %s",
+                    [path, isDisposed.current]
+                );
+                if (isDisposed.current) {
+                    report(
+                        "state-react-extended",
+                        "Skipping deferred listener for %s (disposed)",
+                        [path]
+                    );
+                    return;
+                }
+                
                 needsStateUpdate.current = false;
                 report(
                     "state-react-extended",
