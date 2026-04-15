@@ -5,6 +5,7 @@ import React from "react";
 
 interface StateProviderProps<R> {
     initialState?: R;
+    state?: Store<R>;
     children: ReactNode;
 }
 
@@ -15,15 +16,17 @@ interface StateContextValue<R> {
 
 const StateContext = React.createContext<StateContextValue<any> | null>(null);
 
-export const StateProvider = <R,>({ initialState, children }: StateProviderProps<R>) => {
+export const StateProvider = <R,>({ initialState, state, children }: StateProviderProps<R>) => {
     const lastInitialStateRef = useRef<R | undefined>(initialState);
+    const lastStateRef = useRef<Store<R> | undefined>(state);
     const storeEntryRef = useRef<StateContextValue<R> | null>(null);
 
-    if (!storeEntryRef.current || initialState !== lastInitialStateRef.current) {
-        const store = createStore<R>(initialState || ({} as R));
+    if (!storeEntryRef.current || initialState !== lastInitialStateRef.current || state !== lastStateRef.current) {
+        const store = state || createStore<R>(initialState || ({} as R));
         const { createStateHook } = createStateHookFactory<R>(store);
         storeEntryRef.current = { store, createStateHook };
         lastInitialStateRef.current = initialState;
+        lastStateRef.current = state;
     }
 
     return (
