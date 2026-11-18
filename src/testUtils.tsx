@@ -115,7 +115,7 @@ export interface RenderWithStateReturn<TState> {
  * 
  * @example Basic usage
  * ```typescript
- * import { renderWithState } from '@punyts/state-react/testUtils';
+ * import { renderWithState } from '@punyts/state-react';
  * import { render, screen } from '@testing-library/react';
  * 
  * const { wrapper } = renderWithState({
